@@ -8,20 +8,22 @@ class MyThread extends Thread {
         System.out.println("Thread: " + getName() +
                 ", Grup: " + getThreadGroup().getName() +
                 ", Prioritate: " + getPriority());
+        try {
+            Thread.sleep(300); // simulăm o activitate mică
+        } catch (InterruptedException e) {}
     }
 }
 
 public class ThreadStructure {
     public static void main(String[] args) {
 
-        // ---------Grupul-principal--------
+        // --------- Grupul principal ---------
         ThreadGroup mainGroup = Thread.currentThread().getThreadGroup();
 
         // --- Subgrupuri ---------
         ThreadGroup g2 = new ThreadGroup(mainGroup, "G2");
         ThreadGroup g4 = new ThreadGroup(g2, "G4");
         ThreadGroup g1 = new ThreadGroup(g4, "G1");
-
         ThreadGroup g3 = new ThreadGroup(mainGroup, "G3");
 
         // --- Fire din G1 ---
@@ -42,7 +44,14 @@ public class ThreadStructure {
         MyThread th1_main = new MyThread(mainGroup, "Th1", 3);
         MyThread th2_main = new MyThread(mainGroup, "Th2", 6);
 
-        // --- Pornirea tuturor firelor ---
+        // --- Afișare structură inițială ---
+        System.out.println("\n=== Structura grupurilor (metoda list()) ===");
+        mainGroup.list();
+
+        System.out.println("\n=== Structura personalizată a grupurilor ===");
+        printGroupStructure(mainGroup, 0);
+
+        // --- Pornirea firelor ---
         tha.start();
         thb.start();
         thc.start();
@@ -53,5 +62,34 @@ public class ThreadStructure {
         th3_g3.start();
         th1_main.start();
         th2_main.start();
+
+        try {
+            Thread.sleep(1000); // așteptăm finalizarea firelor
+        } catch (InterruptedException e) {}
+
+        // --- Afișare structură după pornire ---
+        System.out.println("\n=== Structura grupurilor după execuție ===");
+        printGroupStructure(mainGroup, 0);
+    }
+
+    // --- Metodă recursivă pentru afișarea structurii grupurilor ---
+    private static void printGroupStructure(ThreadGroup group, int indent) {
+        String indentStr = " ".repeat(indent * 2);
+        System.out.println(indentStr + "Grup: " + group.getName() + " (maxPri=" + group.getMaxPriority() + ")");
+
+        // Listăm firele din acest grup
+        Thread[] threads = new Thread[group.activeCount()];
+        int count = group.enumerate(threads, false);
+        for (int i = 0; i < count; i++) {
+            System.out.println(indentStr + "  └─ Thread: " + threads[i].getName() +
+                    " [prioritate=" + threads[i].getPriority() + "]");
+        }
+
+        // Listăm subgrupurile recursiv
+        ThreadGroup[] subgroups = new ThreadGroup[group.activeGroupCount()];
+        int subgroupCount = group.enumerate(subgroups, false);
+        for (int i = 0; i < subgroupCount; i++) {
+            printGroupStructure(subgroups[i], indent + 1);
+        }
     }
 }
